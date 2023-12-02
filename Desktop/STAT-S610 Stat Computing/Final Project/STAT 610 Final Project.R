@@ -80,7 +80,7 @@ calculate_w_matrix <- function(qc, qh, n) {
   
   # Set the first row (w_0s)
   for (s in 1:n){
-    w_matrix[1,s] <- qc^(s-1)
+    w_matrix[1,s] <- qc^(s)
   }
   
   # Iterate over the rows
@@ -130,9 +130,18 @@ make_table_3 <- function(qc1,qh1,qc2,qh2){
 
 
 
+long_df <- pivot_longer(accepted_samples, 
+                        cols = c(qc1, qh1, qc2, qh2), 
+                        names_to = c(".value", "group"), 
+                        names_pattern = "(..)(.)")
 
-
-
+# Plotting
+ggplot(long_df, aes(x = qc, y = qh, color = group)) +
+  geom_point() +
+  labs(title = "Scatter Plot by Group",
+       x = "QC Axis",
+       y = "QH Axis") +
+  theme_minimal()
 
 
 
