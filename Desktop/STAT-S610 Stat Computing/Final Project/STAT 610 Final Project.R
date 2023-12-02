@@ -53,8 +53,80 @@ generate_abc <- function(observed, qc, qh, epsilon,N, househould_size, epsilon){
   
 }
 
+long_df <- pivot_longer(accepted_samples, 
+                        cols = c(qc1, qh1, qc2, qh2), 
+                        names_to = c(".value", "group"), 
+                        names_pattern = "(..)(.)")
+
+# Plotting
+ggplot(long_df, aes(x = qc, y = qh, color = group)) +
+  geom_point() +
+  labs(title = "Scatter Plot by Group",
+       x = "QC Axis",
+       y = "QH Axis") +
+  theme_minimal()
 
 
+
+########## Ky
+household_size <- list(H3N2_78 <- colSums(H3N2_78,na.rm = T),
+                       H3N2_81 <-colSums(H3N2_81,na.rm = T),
+                       H1N1_76 <- colSums(H1N1_76,na.rm = T),
+                       H1N1_79 <- colSums(H1N1_79,na.rm = T))
+names(household_size) <- c('H3N2_78','H3N2_81','H1N1_76','H1N1_79')
+calculate_w_matrix <- function(qc, qh, n) {
+  # Initialize the matrix with NA values
+  w_matrix <- matrix(NA, nrow = n+1, ncol = n)
+  
+  # Set the first row (w_0s)
+  for (s in 1:n){
+    w_matrix[1,s] <- qc^(s-1)
+  }
+  
+  # Iterate over the rows
+  for (j in 2:(n+1)) {
+    # Calculate the diagonal element
+    w_matrix[j, j-1] <- 1 - sum(w_matrix[1:(j-1), j-1], na.rm = T)
+    
+    # Fill the rest of the row
+    for (s in (j-1):n) {
+      if (s > j-1) {
+        w_matrix[j, s] <- choose(s, j-1) * w_matrix[j, j-1] * (qc * qh^(j-1))^(s-j+1)
+      }
+    }
+  }
+  rownames(w_matrix) <- 0:n
+  colnames(w_matrix) <- 1:n
+  
+  # Return the completed matrix
+  return(w_matrix)
+}
+
+make_table_2 <- function(qc1,qh1,qc2,qh2){
+  ## for table 2, both year period haves col num 5
+  n1 <- 5
+  n2 <- 5
+  p1 <- calculate_w_matrix(qc1,qh1,n1)
+  p2 <- calculate_w_matrix(qc2,qh2,n2)
+  m1 <- p1 * household_size$H3N2_78
+  m2 <- p2 * household_size$H3N2_81
+  return(cbind(m1,m2))
+}
+
+make_table_3 <- function(qc1,qh1,qc2,qh2){
+  ## for table 3, 75-76 has col 5 and 78-79 has col 3
+  n1 <- 5
+  n2 <- 3
+  p1 <- calculate_w_matrix(qc1,qh1,n1)
+  p2 <- calculate_w_matrix(qc2,qh2,n2)
+  m1 <- p1 * household_size$H1N1_76
+  m2 <- p2 * household_size$H1N1_79
+  ## adjust dimension for n=3
+  na_rows <- matrix(NA, nrow = 2, ncol = ncol(m2))
+  m2_adj <- rbind(m2,na_rows)
+  return(cbind(m1,m2_adj))
+  
+}
 
 
 
