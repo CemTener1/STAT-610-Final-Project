@@ -124,76 +124,78 @@ ggplot(long_df, aes(x = qh, y = qc, color = group)) +
   geom_point() +
   xlim(0,1)+ylim(0,1)+
   labs(title = "Scatter Plot by Group",
-       x = "QC Axis",
-       y = "QH Axis") +
+       x = "Qh Axis",
+       y = "Qc Axis") +
   theme_minimal()
 
 
-#Table 3
-# make_table_3 <- function(qc1,qh1,qc2,qh2){
-#   ## for table 3, 75-76 has col 5 and 78-79 has col 3
-#   n1 <- 5
-#   n2 <- 3
-#   p1 <- calculate_w_matrix(qc1,qh1,n1)
-#   p2 <- calculate_w_matrix(qc2,qh2,n2)
-#   m1 <- p1 * household_size$H1N1_76
-#   m2 <- p2 * household_size$H1N1_79
-#   ## adjust dimension for n=3
-#   na_rows <- matrix(NA, nrow = 2, ncol = ncol(m2))
-#   m2_adj <- rbind(m2,na_rows)
-#   return(cbind(m1,m2_adj))
-#   
-# }
-# #Initialize the prior and 
-# N = 1e+5
-# qc1 = runif(N)
-# qh1 = runif(N)
-# qc2 = runif(N)
-# qh2 = runif(N)
-# D1 = H1N1_76 
-# D2 = H1N1_79
-# 
-# generate_abc2 <- function(qc1, qc2, qh1, qh2, N, epsilon, D1, D2){
-#   accepted_sample = data.frame(qc1 = numeric(0),
-#                                qh1 = numeric(0),
-#                                qc2 = numeric(0),
-#                                qh2 = numeric(0))
-#   
-#   for (i in 1:N){
-#     #simulate data for given parameters
-#     simulated_data <- make_table_3(qc1[i], qh1[i], qc2[i], qh2[i])
-#     #assign the simulated data to a new variable 
-#     D_star1 <- simulated_data[,1:5]
-#     D_star2 <- simulated_data[1:4,6:8]
-#     #calculate the distance
-#     dist <- distance(D1, D2, D_star1, D_star2)
-#     
-#     #Accept/Reject Condition
-#     if (dist < epsilon){
-#       new_values <- c(qc1[i], qh1[i], qc2[i], qh2[i])
-#       accepted_sample <- rbind(accepted_sample, new_values)
-#     }
-#   }
-#   colnames(accepted_sample) <- c("qc1", "qc2", "qh1", "qh2")
-#   return(accepted_sample)
-#   
-# }
-# 
-# accepted_sample2 <- generate_abc2(qc1,qc2,qh1,qh2,N,100, D1, D2)
-# accepted_sample2
-# 
-# long_df2 <- pivot_longer(accepted_sample2, 
-#                          cols = c(qc1, qh1, qc2, qh2), 
-#                          names_to = c(".value", "group"), 
-#                          names_pattern = "(..)(.)")
-# long_df2
-# 
-# ggplot(long_df2, aes(x = qc, y = qh, color = group)) +
-#   geom_point() +
-#   labs(title = "Scatter Plot by Group",
-#        x = "QC Axis",
-#        y = "QH Axis") +
-#   theme_minimal()
+# Table 3
+make_table_3 <- function(qc1,qh1,qc2,qh2){
+  ## for table 3, 75-76 has col 5 and 78-79 has col 3
+  n1 <- 5
+  n2 <- 3
+  p1 <- calculate_w_matrix(qc1,qh1,n1)
+  p2 <- calculate_w_matrix(qc2,qh2,n2)
+  m1 <- sweep(p1, 2, household_size$B_76, `*`)
+  m2 <- sweep(p2, 2, household_size$B_79, `*`)
+  ## adjust dimension for n=3
+  na_rows <- matrix(NA, nrow = 2, ncol = ncol(m2))
+  m2_adj <- rbind(m2,na_rows)
+  return(cbind(m1,m2_adj))
+
+}
+#Initialize the prior and
+N = 3e+5
+qc1 = runif(N)
+qh1 = runif(N)
+qc2 = runif(N)
+qh2 = runif(N)
+D3 = H1N1_76
+D4 = H1N1_79
+
+generate_abc2 <- function(qc1, qc2, qh1, qh2, N, epsilon, D1, D2){
+  accepted_sample = data.frame(qc1 = numeric(0),
+                               qh1 = numeric(0),
+                               qc2 = numeric(0),
+                               qh2 = numeric(0))
+
+  for (i in 1:N){
+    #simulate data for given parameters
+    simulated_data <- make_table_3(qc1[i], qh1[i], qc2[i], qh2[i])
+    #assign the simulated data to a new variable
+    D_star1 <- simulated_data[,1:5]
+    D_star2 <- simulated_data[1:4,6:8]
+    #calculate the distance
+    dist <- distance(D1, D2, D_star1, D_star2)
+
+    #Accept/Reject Condition
+    if (dist < epsilon){
+      new_values <- c(qc1[i], qh1[i], qc2[i], qh2[i])
+      accepted_sample <- rbind(accepted_sample, new_values)
+    }
+  }
+  colnames(accepted_sample) <- c("qc1", "qh1", "qc2", "qh2")
+  return(accepted_sample)
+
+}
+
+accepted_sample2 <- generate_abc2(qc1,qc2,qh1,qh2,N,7, D3, D4)
+accepted_sample2
+
+long_df2 <- pivot_longer(accepted_sample2,
+                         cols = c(qc1, qh1, qc2, qh2),
+                         names_to = c(".value", "group"),
+                         names_pattern = "(..)(.)")
+long_df2
+
+ggplot(long_df2, aes(x = qh, y = qc, color = group)) +
+  geom_point() + xlim(0,1) + ylim(0,1) +
+  labs(title = "Scatter Plot by Group",
+       x = "Qh Axis",
+       y = "Qc Axis") +
+  theme_minimal() +
+  geom_encircle(aes(group = group), 
+                expand = unit(0.1, "cm"))
 
 
 
