@@ -1,4 +1,4 @@
-library(tidyverse)
+
 #Import the dataset
 H3N2_78 <- matrix(c(66, 87, 25, 22, 4, 13, 14,15, 9, 4,NA, 4,4,9,1,NA,NA, 4,3,1,
                     NA,NA,NA,1,1,NA,NA,NA,NA,0), ncol = 5, nrow = 6, byrow =TRUE)
@@ -22,21 +22,22 @@ distance <- function(D1,D2, D_star1, D_star2){
   D_star2[is.na(D_star2)] <- 0
   D1[is.na(D1)] <- 0
   D2[is.na(D2)] <- 0
-  dist <- 0.5*(norm(pmax(D1 - D_star1), type = "F") + norm(D2 - D_star2, type = "F"))
-  
+  norm1 <- norm(D1 - D_star1, type = "F")
+  norm2 <- norm(D2 - D_star2, type = "F")
+  dist <- 0.5 * (norm1 + norm2)
   return(dist) 
   
 }
 
-household_size <- list(H3N2_78 <- colSums(H3N2_78,na.rm = T),
-                       H3N2_81 <-colSums(H3N2_81,na.rm = T),
-                       H1N1_76 <- colSums(H1N1_76,na.rm = T),
-                       H1N1_79 <- colSums(H1N1_79,na.rm = T))
-names(household_size) <- c('H3N2_78','H3N2_81','H1N1_76','H1N1_79')
+household_size <- list(A_78 <- colSums(H3N2_78,na.rm = T),
+                       A_81 <-colSums(H3N2_81,na.rm = T),
+                       B_76 <- colSums(H1N1_76,na.rm = T),
+                       B_79 <- colSums(H1N1_79,na.rm = T))
+names(household_size) <- c('A_78','A_81','B_76','B_79')
 
 calculate_w_matrix <- function(qc, qh, n) {
   # Initialize the matrix with NA values
-  w_matrix <- matrix(NA, nrow = n+1, ncol = n)
+  w_matrix <- matrix(0, nrow = n+1, ncol = n)
   
   # Set the first row (w_0s)
   for (s in 1:n){
@@ -68,13 +69,13 @@ make_table_2 <- function(qc1,qh1,qc2,qh2){
   n2 <- 5
   p1 <- calculate_w_matrix(qc1,qh1,n1)
   p2 <- calculate_w_matrix(qc2,qh2,n2)
-  m1 <- p1 * household_size$H3N2_78
-  m2 <- p2 * household_size$H3N2_81
+  m1 <- sweep(p1, 2, household_size$A_78, `*`)
+  m2 <- sweep(p2, 2, household_size$A_81, `*`)
   return(cbind(m1,m2))
 }
 
 #Initialize the prior and 
-N = 1e+5
+N = 5e+5
 qc1 = runif(N)
 qh1 = runif(N)
 qc2 = runif(N)
@@ -82,6 +83,7 @@ qh2 = runif(N)
 D1 = H3N2_78 
 D2 = H3N2_81
 
+#simulated_data <- make_table_2(0.6,0.7,0.4,0.5)
 #Table 2
 generate_abc <- function(qc1, qc2, qh1, qh2, N, epsilon, D1, D2){
   accepted_sample = data.frame(qc1 = numeric(0),
@@ -104,22 +106,23 @@ generate_abc <- function(qc1, qc2, qh1, qh2, N, epsilon, D1, D2){
       accepted_sample <- rbind(accepted_sample, new_values)
     }
   }
-  colnames(accepted_sample) <- c("qc1", "qc2", "qh1", "qh2")
+  colnames(accepted_sample) <- c("qc1", "qh1", "qc2", "qh2")
   return(accepted_sample)
   
 }
 
-accepted_sample <- generate_abc(qc1,qc2,qh1,qh2,N,30, D1, D2)
-accepted_sample
+accepted_sample <- generate_abc(qc1,qc2,qh1,qh2,N,15, D1, D2)
+#accepted_sample
 
 long_df <- pivot_longer(accepted_sample, 
                         cols = c(qc1, qh1, qc2, qh2), 
                         names_to = c(".value", "group"), 
                         names_pattern = "(..)(.)")
-long_df
+#long_df
 
-ggplot(long_df, aes(x = qc, y = qh, color = group)) +
+ggplot(long_df, aes(x = qh, y = qc, color = group)) +
   geom_point() +
+  xlim(0,1)+ylim(0,1)+
   labs(title = "Scatter Plot by Group",
        x = "QC Axis",
        y = "QH Axis") +
@@ -191,19 +194,6 @@ ggplot(long_df, aes(x = qc, y = qh, color = group)) +
 #        x = "QC Axis",
 #        y = "QH Axis") +
 #   theme_minimal()
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
