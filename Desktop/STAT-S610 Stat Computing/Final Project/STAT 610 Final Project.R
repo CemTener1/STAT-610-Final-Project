@@ -208,6 +208,61 @@ ggplot(long_df2, aes(x = qh, y = qc, color = group)) +
 
 
 library(testthat)
+# Test for distance function
+test_that("distance function outputs correct Frobenius norm", {
+  # Create two known matrices
+  D1 <- matrix(c(1, 2, 3, 4), nrow = 2)
+  D2 <- matrix(c(5, 6, 7, 8), nrow = 2)
+  D_star1 <- matrix(c(1, 1, 1, 1), nrow = 2)
+  D_star2 <- matrix(c(2, 2, 2, 2), nrow = 2)
+  
+  # Manually calculate Frobenius norm
+  manual_norm <- (sqrt(sum((D1 - D_star1)^2)) + sqrt(sum((D2 - D_star2)^2))) / 2
+  
+  # Check if the function's output matches manual calculation
+  expect_equal(distance(D1, D2, D_star1, D_star2), manual_norm)
+})
+
+# Test for calculate_w_matrix function
+test_that("calculate_w_matrix outputs a matrix with correct properties", {
+  n <- 5
+  qc <- 0.3
+  qh <- 0.7
+  
+  # Obtain the matrix from the function
+  w_matrix <- calculate_w_matrix(qc, qh, n)
+  
+  # Check that all column sums to one
+  expect_equal(unname(colSums(w_matrix)), rep(1, n))
+  
+  # Check that each entry is in [0, 1]
+  expect_true(all(w_matrix >= 0 & w_matrix <= 1))
+})
+
+# Test for make_table_2 function
+test_that("make_table_2 outputs a table with weighted column sums", {
+  qc1 <- 0.2
+  qh1 <- 0.8
+  qc2 <- 0.4
+  qh2 <- 0.6
+  # Manually create weights and calculate expected table
+  expected_table <- matrix(c(15.8, 4.20,  0.384,  0.0704, 0.00352, 21.6, 13.440,  
+                             3.84000, 1.587200,  0.1945600, 63.2, 26.88,  2.94912,
+                             0.5767168, 0.02883584, 32.4, 24.192,  6.2208,  2.057011,
+                             0.1891123, 0.0, 73.92, 12.97613,  3.0450647, 0.16240345,
+                             0.0, 46.368, 14.30784,  4.258013,  0.31317, 0.0, 0.00, 
+                             31.69075, 11.8988210, 0.76152455,  0.0,  0.00, 35.63136,
+                             12.724671,  0.8422911, 0.0,  0.0,  0.0, 28.4089975, 2.9090,
+                             0.0,  0.0,  0.0, 41.373104,  3.2863591, 0.0,  0.0,  0.0,  
+                             0.0, 7.13463482, 0.0,  0.0,  0.0,  0.0, 14.1745), 
+                           nrow = 6,ncol = 10, byrow = T)  
+  # Obtain the table from the function
+  result_table <- unname(make_table_2(qc1, qh1, qc2, qh2))
+  
+  # Check if the function's output matches the expected table
+  tolerance <- 1e-5  # You can adjust the tolerance level as needed
+  expect_equal(result_table, expected_table, tolerance = tolerance)
+})
 
 
 
